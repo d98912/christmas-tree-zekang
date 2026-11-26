@@ -22,7 +22,7 @@
     top:31vh;
     margin:0;
     font-family:"STKaiti","KaiTi","楷体","Songti SC",serif;
-    font-size:clamp(24px, 4.2vw, 58px);
+    font-size:clamp(30px, 6vw, 76px);
     line-height:1.15;
     letter-spacing:.14em;
     color:#ffffff;
@@ -142,8 +142,8 @@ function genStars(){
 }
 
 function genHeart(){
-  var scale = 0.9;
-  var topY = TREE_HEIGHT + 0.05;
+  var scale = 1.35;
+  var topY = TREE_HEIGHT + 0.85;
   var n = 0, guard = 0;
   while (n < HEART_POINTS && guard < 400000){
     guard++;
@@ -360,7 +360,7 @@ function resize(){
     gl.viewport(0, 0, glCanvas.width, glCanvas.height);
     var aspect = W / H;
     gl.uniform1f(uAspect, aspect);
-    gl.uniform1f(uZoom, Math.max(0.55, Math.min(1.0, aspect / 1.6)));
+    gl.uniform1f(uZoom, Math.max(0.62, Math.min(1.0, aspect / 1.6)));
     gl.uniform1f(uPointScale, (H / 900) * DPR);
   }
 
