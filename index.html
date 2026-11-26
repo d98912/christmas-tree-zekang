@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>圣诞快乐</title>
+<meta name="description" content="圣诞快乐">
+<style>
+  html, body{
+    margin:0;padding:0;height:100%;
+    background:#000;
+    overflow:hidden;
+    -webkit-user-select:none;user-select:none;
+  }
+  canvas#gl, canvas#snow{
+    position:fixed;inset:0;width:100%;height:100%;display:block;
+  }
+  canvas#snow{pointer-events:none}
+  .wish{
+    position:fixed;
+    left:clamp(18px, 4vw, 64px);
+    top:31vh;
+    margin:0;
+    font-family:"STKaiti","KaiTi","楷体","Songti SC",serif;
+    font-size:clamp(24px, 4.2vw, 58px);
+    line-height:1.15;
+    letter-spacing:.14em;
+    color:#ffffff;
+    text-shadow:0 0 14px rgba(190,225,255,.55), 0 0 42px rgba(140,190,255,.28);
+    pointer-events:none;
+    white-space:nowrap;
+  }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<canvas id="snow"></canvas>
+<p class="wish">圣诞快乐</p>
+
+<script>
+(function(){
+'use strict';
+
+var TAU = Math.PI * 2;
+var TREE_HEIGHT = 12.0;
+var TREE_POINTS = 50000;
+var GROUND_POINTS = 4000;
+var STAR_POINTS = 1200;
+var HEART_POINTS = 1000;
+
+var DATA = [];
+
+function pt(x, y, z, r, g, b){
+  DATA.push(x, y, z, r, g, b);
+}
+
+function gauss(mu, sigma){
+  var u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return mu + sigma * Math.sqrt(-2 * Math.log(u)) * Math.cos(TAU * v);
+}
+
+function genTree(){
+  var loops = 9;
+  var spiralN = Math.floor(TREE_POINTS * 0.7);
+  var i, u, h, y, baseR, wave, bf, t, angle, r, x, z, mid;
+  var bg, bb, cg, cb;
+
+  for (i = 0; i < spiralN; i++){
+    u = Math.random();
+    h = Math.pow(u, 1.6);
+    y = TREE_HEIGHT * h + 0.2;
+
+    baseR = Math.pow(1 - h, 1.1) * 3.2;
+    wave = Math.max(0, Math.sin((h * 5.8 + 0.15) * TAU));
+    bf = 1 + 0.65 * wave;
+    baseR *= bf;
+
+    t = u * loops * TAU;
+    angle = t + (Math.random() * 0.44 - 0.22);
+    r = baseR * (0.85 + Math.random() * 0.23);
+    x = Math.cos(angle) * r;
+    z = Math.sin(angle) * r;
+
+    mid = Math.max(0.15, 1 - Math.abs(h - 0.55) * 1.5);
+    bg = 155 + Math.floor(90 * mid);
+    bb = 185 + Math.floor(70 * mid);
+    cg = Math.min(255, bg + Math.floor(Math.random() * 36 - 15));
+    cb = Math.min(255, bb + Math.floor(Math.random() * 51 - 15));
+
+    if (Math.random() < 0.08){
+      cg = 255 - Math.floor(Math.random() * 36);
+      cb = 230 + Math.floor(Math.random() * 26);
+    }
+    pt(x, y, z, 255, Math.max(0, cg), Math.max(0, cb));
+  }
+
+  var fillN = TREE_POINTS - spiralN;
+  for (i = 0; i < fillN; i++){
+    h = Math.pow(Math.random(), 1.9);
+    y = TREE_HEIGHT * h + 0.2 + (Math.random() * 0.16 - 0.08);
+
+    baseR = Math.pow(1 - h, 1.1) * 4.3;
+    wave = Math.max(0, Math.sin((h * 5.8 + 0.15) * TAU));
+    bf = 1 + 0.65 * wave;
+    baseR *= bf;
+
+    r = baseR * Math.sqrt(Math.random());
+    angle = Math.random() * TAU;
+    x = Math.cos(angle) * r + (Math.random() * 0.16 - 0.08);
+    z = Math.sin(angle) * r + (Math.random() * 0.16 - 0.08);
+
+    pt(x, y, z, 255, 165 + Math.floor(Math.random() * 61), 190 + Math.floor(Math.random() * 61));
+  }
+}
+
+function genGround(){
+  var rings = [4.6, 6.0, 7.4, 8.8, 10.2, 11.4];
+  for (var i = 0; i < GROUND_POINTS; i++){
+    var ring = rings[Math.floor(Math.random() * rings.length)];
+    var rr = gauss(ring, 0.3);
+    var th = Math.random() * TAU;
+    var c;
+    if (Math.random() < 0.15){
+      c = 235 + Math.floor(Math.random() * 21);
+    } else {
+      c = 190 + Math.floor(Math.random() * 46);
+    }
+    pt(Math.cos(th) * rr, -0.25, Math.sin(th) * rr, c, c, 255);
+  }
+}
+
+function genStars(){
+  for (var i = 0; i < STAR_POINTS; i++){
+    var x = -18 + Math.random() * 36;
+    var z = -18 + Math.random() * 36;
+    var y = 3 + Math.random() * 15;
+    var base = 215 + Math.floor(Math.random() * 41);
+    pt(x, y, z, base, base, 255);
+  }
+}
+
+function genHeart(){
+  var scale = 0.9;
+  var topY = TREE_HEIGHT + 0.05;
+  var n = 0, guard = 0;
+  while (n < HEART_POINTS && guard < 400000){
+    guard++;
+    var x = -1.3 + Math.random() * 2.6;
+    var y = -1.4 + Math.random() * 2.8;
+    var f = Math.pow(x * x + y * y - 1, 3) - x * x * y * y * y;
+    if (f <= 0){
+      var wx = x * scale * 0.8;
+      var wy = topY + (y + 1.0) * scale * 0.5;
+      var wz = -0.18 + Math.random() * 0.36;
+      var dist = Math.sqrt(x * x + y * y);
+      var fac = Math.max(0.35, 1.15 - 0.5 * dist);
+      var gg = Math.max(120, Math.min(255, Math.floor(130 * fac + 80)));
+      var bb = Math.max(120, Math.min(255, Math.floor(190 * fac + 70)));
+      pt(wx, wy, wz, 255, gg, bb);
+      n++;
+    }
+  }
+}
+
+genTree();
+genGround();
+genStars();
+genHeart();
+/* ---------- buffers ---------- */
+var POINT_COUNT = DATA.length / 6;
+var VBO = new Float32Array(DATA);
+DATA = null;
+
+/* ---------- canvases ---------- */
+var glCanvas = document.getElementById('gl');
+var snowCanvas = document.getElementById('snow');
+var sctx = snowCanvas.getContext('2d');
+var gl = glCanvas.getContext('webgl', { alpha: false, antialias: true }) ||
+         glCanvas.getContext('experimental-webgl', { alpha: false, antialias: true });
+
+var W = 0, H = 0, DPR = 1;
+
+var VERT = [
+  'attribute vec3 aPos;',
+  'attribute vec3 aCol;',
+  'uniform float uAngle;',
+  'uniform float uAspect;',
+  'uniform float uZoom;',
+  'uniform float uPitch;',
+  'uniform float uDist;',
+  'uniform float uCamH;',
+  'uniform float uPointScale;',
+  'varying vec3 vCol;',
+  'void main(){',
+  '  float ca = cos(uAngle);',
+  '  float sa = sin(uAngle);',
+  '  float xz = aPos.x * ca - aPos.z * sa;',
+  '  float zz = aPos.x * sa + aPos.z * ca;',
+  '  float cp = cos(uPitch);',
+  '  float sp = sin(uPitch);',
+  '  float yp = aPos.y * cp - zz * sp;',
+  '  float zp = aPos.y * sp + zz * cp;',
+  '  zp += uDist;',
+  '  yp -= uCamH;',
+  '  if (zp < 0.35){',
+  '    gl_Position = vec4(2.0, 2.0, 0.0, 1.0);',
+  '    gl_PointSize = 0.0;',
+  '    vCol = vec3(0.0);',
+  '    return;',
+  '  }',
+  '  float f = 1.26 * uZoom / zp;',
+  '  gl_Position = vec4(xz * f / uAspect, yp * f, 0.0, 1.0);',
+  '  float s = max(1.0, 3.6 - zp * 0.13) * uPointScale;',
+  '  gl_PointSize = s;',
+  '  vCol = aCol * vec3(0.00392156);',
+  '}'
+].join('\n');
+
+var FRAG = [
+  'precision mediump float;',
+  'varying vec3 vCol;',
+  'void main(){',
+  '  vec2 d = gl_PointCoord - vec2(0.5);',
+  '  float r2 = d.x * d.x + d.y * d.y;',
+  '  if (r2 > 0.25) discard;',
+  '  float a = 1.0 - smoothstep(0.13, 0.25, r2);',
+  '  gl_FragColor = vec4(vCol, a);',
+  '}'
+].join('\n');
+
+function compile(type, src){
+  var s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)){
+    throw new Error(gl.getShaderInfoLog(s));
+  }
+  return s;
+}
+
+var prog = null;
+var uAngle, uAspect, uZoom, uPitch, uDist, uCamH, uPointScale;
+
+function initGL(){
+  prog = gl.createProgram();
+  gl.attachShader(prog, compile(gl.VERTEX_SHADER, VERT));
+  gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FRAG));
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)){
+    throw new Error(gl.getProgramInfoLog(prog));
+  }
+  gl.useProgram(prog);
+
+  var buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, VBO, gl.STATIC_DRAW);
+
+  var aPos = gl.getAttribLocation(prog, 'aPos');
+  var aCol = gl.getAttribLocation(prog, 'aCol');
+  gl.enableVertexAttribArray(aPos);
+  gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 24, 0);
+  gl.enableVertexAttribArray(aCol);
+  gl.vertexAttribPointer(aCol, 3, gl.FLOAT, false, 24, 12);
+
+  uAngle = gl.getUniformLocation(prog, 'uAngle');
+  uAspect = gl.getUniformLocation(prog, 'uAspect');
+  uZoom = gl.getUniformLocation(prog, 'uZoom');
+  uPitch = gl.getUniformLocation(prog, 'uPitch');
+  uDist = gl.getUniformLocation(prog, 'uDist');
+  uCamH = gl.getUniformLocation(prog, 'uCamH');
+  uPointScale = gl.getUniformLocation(prog, 'uPointScale');
+
+  gl.uniform1f(uPitch, -0.25);
+  gl.uniform1f(uDist, 13.0);
+  gl.uniform1f(uCamH, 6.0);
+
+  gl.clearColor(0, 0, 0, 1);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.disable(gl.DEPTH_TEST);
+}
+
+/* ---------- foreground snow ---------- */
+var flakes = [];
+var SNOW_N = 10;
+
+function spawnFlake(){
+  var k = H / 900;
+  var y = (-80 + Math.random() * 70) * k;
+  var r = (10 + Math.random() * 6) * k;
+  var v = (30 + Math.random() * 15) * k;
+  var travel = H + 80 * k - y;
+  var life = travel / v;
+  return { x: Math.random() * W, y: y, r: r, v: v, life: life, maxLife: life };
+}
+
+function initFlakes(){
+  flakes.length = 0;
+  for (var i = 0; i < SNOW_N; i++){
+    var f = spawnFlake();
+    f.y = -80 * (H / 900) + Math.random() * H;   // 初始分散，避免全部从顶端一起落下
+    f.life = (H + 80 * (H / 900) - f.y) / f.v;
+    f.maxLife = f.life;
+    flakes.push(f);
+  }
+}
+
+function drawFlake(x, y, r, a){
+  var R = r * 1.4;
+  var g = sctx.createRadialGradient(x, y, 0, x, y, R);
+  g.addColorStop(0.00, 'rgba(255,255,255,' + (a * 0.95) + ')');
+  g.addColorStop(0.28, 'rgba(255,255,255,' + (a * 0.45) + ')');
+  g.addColorStop(0.62, 'rgba(255,255,255,' + (a * 0.12) + ')');
+  g.addColorStop(1.00, 'rgba(255,255,255,0)');
+  sctx.fillStyle = g;
+  sctx.beginPath();
+  sctx.arc(x, y, R, 0, TAU);
+  sctx.fill();
+}
+
+function updateSnow(dt){
+  sctx.clearRect(0, 0, W, H);
+  for (var i = 0; i < flakes.length; i++){
+    var f = flakes[i];
+    f.y += f.v * dt;
+    f.life -= dt;
+    if (f.life <= 0 || f.y > H + 50){
+      flakes[i] = spawnFlake();
+      flakes[i].y = -80 * (H / 900);
+      continue;
+    }
+    var phase = f.life / f.maxLife;
+    var a = phase > 0.3 ? 1 : Math.max(0, phase / 0.3);
+    drawFlake(f.x, f.y, f.r, a);
+  }
+}
+
+/* ---------- resize & loop ---------- */
+var rzTimer = null;
+
+function resize(){
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth;
+  H = window.innerHeight;
+
+  glCanvas.width = Math.round(W * DPR);
+  glCanvas.height = Math.round(H * DPR);
+  glCanvas.style.width = W + 'px';
+  glCanvas.style.height = H + 'px';
+
+  snowCanvas.width = Math.round(W * DPR);
+  snowCanvas.height = Math.round(H * DPR);
+  snowCanvas.style.width = W + 'px';
+  snowCanvas.style.height = H + 'px';
+  sctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+  if (gl){
+    gl.viewport(0, 0, glCanvas.width, glCanvas.height);
+    var aspect = W / H;
+    gl.uniform1f(uAspect, aspect);
+    gl.uniform1f(uZoom, Math.max(0.55, Math.min(1.0, aspect / 1.6)));
+    gl.uniform1f(uPointScale, (H / 900) * DPR);
+  }
+
+  initFlakes();
+}
+
+var last = performance.now();
+var spin = 0;
+
+function frame(now){
+  var dt = (now - last) / 1000;
+  last = now;
+  if (!isFinite(dt) || dt <= 0) dt = 1 / 60;
+  if (dt > 0.05) dt = 0.05;
+
+  spin += 0.27 * dt;
+
+  if (gl){
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.uniform1f(uAngle, spin);
+    gl.drawArrays(gl.POINTS, 0, POINT_COUNT);
+  }
+
+  updateSnow(dt);
+  requestAnimationFrame(frame);
+}
+
+if (gl){
+  initGL();
+  resize();
+} else {
+  resize();
+}
+
+window.addEventListener('resize', function(){
+  if (rzTimer) clearTimeout(rzTimer);
+  rzTimer = setTimeout(resize, 160);
+});
+
+requestAnimationFrame(function(now){
+  last = now;
+  requestAnimationFrame(frame);
+});
+
+})();
+</script>
+</body>
+</html>
