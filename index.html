@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>天天开心</title>
-<meta name="description" content="天天开心">
+<title>愿所有的美好都如约而至</title>
+<meta name="description" content="愿所有的美好都如约而至">
 <style>
   html, body{
     margin:0;padding:0;height:100%;
@@ -18,13 +18,15 @@
   canvas#snow{pointer-events:none}
   .wish{
     position:fixed;
-    left:clamp(18px, 4vw, 64px);
-    top:31vh;
+    left:clamp(16px, 4vw, 56px);
+    top:11vh;
     margin:0;
+    writing-mode:vertical-rl;
+    text-orientation:upright;
     font-family:"STKaiti","KaiTi","楷体","Songti SC",serif;
-    font-size:clamp(30px, 6vw, 76px);
-    line-height:1.15;
-    letter-spacing:.14em;
+    font-size:clamp(18px, 4vh, 44px);
+    line-height:1.5;
+    letter-spacing:.32em;
     color:#ffffff;
     text-shadow:0 0 14px rgba(190,225,255,.55), 0 0 42px rgba(140,190,255,.28);
     pointer-events:none;
@@ -35,7 +37,7 @@
 <body>
 <canvas id="gl"></canvas>
 <canvas id="snow"></canvas>
-<p class="wish">天天开心</p>
+<p class="wish">愿所有的美好都如约而至</p>
 
 <script>
 (function(){
